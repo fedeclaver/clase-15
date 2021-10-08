@@ -5,5 +5,8 @@ const optionsSqlite3 = {
   },
   useNullAsDefault: true,
 };
+console.log('Conectando a la base de datos sqlite3...');
 
-export { optionsSqlite3 };
+module.exports = {
+  optionsSqlite3
+}
