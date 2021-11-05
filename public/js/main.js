@@ -64,6 +64,8 @@ function makeHtmlList(mensajes) {
     }).join(" ");
 }
 
+
+
 inputUsername.addEventListener('input', () => {
     const hayEmail = inputUsername.value.length
     const hayTexto = inputMensaje.value.length

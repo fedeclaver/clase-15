@@ -1,8 +1,12 @@
-const express = require('express')
+const express = require('express');
 
+const normalizr = require("normalizr");
+const normalize = normalizr.normalize;
+const denormalize = normalizr.denormalize;
+const schema = normalizr.schema;
 const { Server: HttpServer } = require('http')
 const { Server: Socket } = require('socket.io')
-
+const util = require('util')
 const ContenedorMemoria = require('../contenedores/ContenedorMemoria.js')
 const ContenedorArchivo = require('../contenedores/ContenedorArchivo.js')
 const ContenedorDatabase = require('../contenedores/ContenedorDatabase.js')
@@ -16,19 +20,34 @@ const io = new Socket(httpServer)
 const {optionsSqlite3} = require('../options/SQLite3');
 const {optionsmariadb} = require('../options/mariadb');
 
-
+const ApiProductosMock = require('../api/productos-test.js');
 //const productosApi = new ContenedorMemoria()
 //const mensajesApi = new ContenedorArchivo('mensajes.json')
+//const productosApi = new ContenedorArchivo('productos.json')
 const productosApi = new ContenedorMemoria(optionsmariadb,'productos')
 const mensajesApi = new ContenedorDatabase(optionsSqlite3,'mensajes');
 //--------------------------------------------
 // configuro el socket
+     const apiProductos = new ApiProductosMock()
+const ProductosRouter = require('../router/productos.js')
+//app.use('/', new ProductosRouter());
+
+// Definimos un esquema autores
+const autores = new schema.Entity('autores');
+// Definimos un esquema mensaje
+const mensaje = new schema.Entity('mensaje', {
+    author: autores
+  });
+  const mensajes = new schema.Entity('mensajes', {
+    mensajes: [mensaje],
+  });
+
 
 io.on('connection', async socket => {
     console.log('Nuevo cliente conectado!');
-
+    const apiProductos = new ApiProductosMock()
     // carga inicial de productos
-    socket.emit('productos', productosApi.listarAll());
+    socket.emit('productos', await apiProductos.listar(5));
 
     // actualizacion de productos
     socket.on('update', producto => {
@@ -37,15 +56,32 @@ io.on('connection', async socket => {
     })
 
     // carga inicial de mensajes
-    socket.emit('mensajes', await mensajesApi.listarAll());
+    const msjListar = await mensajesApi.listarAll();
+    const normalizar = normalize({id: 'mensaje',mensajes: msjListar},mensajes);
+        print(normalizar);
+        socket.emit('mensajes',normalizar);
+
+
 
     // actualizacion de mensajes
     socket.on('nuevoMensaje', async mensaje => {
         mensaje.fyh = new Date().toLocaleString()
         await mensajesApi.guardar(mensaje)
-        io.sockets.emit('mensajes', await mensajesApi.listarAll());
+        const msjListar = await mensajesApi.listarAll();
+        const normalizar = normalize({id: 'mensaje',mensajes: msjListar},mensajes);
+        print(normalizar);
+        io.sockets.emit('mensajes',normalizar);
     })
 });
+
+
+  function print(objeto) {
+    console.log(util.inspect(objeto, false, 12, true))
+  }
+
+
+ 
+
 
 //--------------------------------------------
 // agrego middlewares

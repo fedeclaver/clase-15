@@ -3,7 +3,7 @@ const getProd = require('../utils/getProducts.js')
 class ApiProductosMock {
     constructor() {}
 
-    listar(cant = 50) {
+    listar(cant) {
         const Productos = []
         for (let i = 0; i < cant; i ++) {
             const producto = getProd()
